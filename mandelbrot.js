@@ -23,7 +23,7 @@ const maxIterations = 500;
 
 // Zoom settings
 let zoomFactor = 0.99; //Zoom in by 5% each frame
-let zoomSpeed = 50; // Fast zoom speed
+let zoomSpeed = 150; // Fast zoom speed
 
 function mandelbrot(cx, cy) {
   let x = 0;
