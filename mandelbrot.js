@@ -1,62 +1,77 @@
-const canvas = document.getElementById("mandelbrotCanvas");
+const canvas = document.createElement("canvas");
 const ctx = canvas.getContext("2d");
 
-// Fullscreen canvas
+document.body.style.margin = "0";
+document.body.style.overflow = "hidden";
+
+canvas.style.display = "block";
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const maxIterations = 100; // Medium speed rendering
-const zoom = 300;          // Zoom factor (adjust for detail)
-const offsetX = -canvas.width / (zoom * 2); // Center x
-const offsetY = -canvas.height / (zoom * 2); // Center y
+document.body.appendChild(canvas);
 
-function mandelbrot(cRe, cIm) {
-  let zRe = 0, zIm = 0, iterations = 0;
+let width = canvas.width;
+let height = canvas.height;
 
-  while (iterations < maxIterations && zRe * zRe + zIm * zIm <= 4) {
-    let tempRe = zRe * zRe - zIm * zIm + cRe;
-    zIm = 2 * zRe * zIm + cIm;
-    zRe = tempRe;
-    iterations++;
+// Mandelbrot Set variables
+let xMin = -2.5;
+let xMax = 1;
+let yMin = -1.5;
+let yMax = 1.5;
+
+const maxIterations = 500;
+
+// Zoom settings
+let zoomFactor = 0.95; // Zoom in by 5% each frame
+let zoomSpeed = 100; // Lower is faster
+
+function mandelbrot(cx, cy) {
+  let x = 0;
+  let y = 0;
+  let iteration = 0;
+
+  while (x * x + y * y <= 4 && iteration < maxIterations) {
+    let xTemp = x * x - y * y + cx;
+    y = 2 * x * y + cy;
+    x = xTemp;
+    iteration++;
   }
 
-  return iterations;
+  return iteration;
 }
 
-function renderMandelbrot() {
-  const imageData = ctx.createImageData(canvas.width, canvas.height);
-  const pixels = imageData.data;
+function drawMandelbrot() {
+  for (let px = 0; px < width; px++) {
+    for (let py = 0; py < height; py++) {
+      let x0 = xMin + (px / width) * (xMax - xMin);
+      let y0 = yMin + (py / height) * (yMax - yMin);
 
-  for (let x = 0; x < canvas.width; x++) {
-    for (let y = 0; y < canvas.height; y++) {
-      // Map pixel to Mandelbrot coordinates
-      const cRe = (x / zoom) + offsetX;
-      const cIm = (y / zoom) + offsetY;
+      let iteration = mandelbrot(x0, y0);
+      let color = iteration === maxIterations ? 0 : (iteration / maxIterations) * 255;
 
-      // Get number of iterations
-      const iterations = mandelbrot(cRe, cIm);
-
-      // Determine color based on iterations (green gradient)
-      const color = Math.floor(255 * (iterations / maxIterations));
-      const index = (y * canvas.width + x) * 4;
-
-      // Set green shades
-      pixels[index] = 0; // Red
-      pixels[index + 1] = color; // Green
-      pixels[index + 2] = 0; // Blue
-      pixels[index + 3] = 255; // Alpha
+      ctx.fillStyle = `rgb(${color}, ${color}, ${color})`;
+      ctx.fillRect(px, py, 1, 1);
     }
   }
-
-  ctx.putImageData(imageData, 0, 0);
 }
 
-// Render the Mandelbrot set
-renderMandelbrot();
+function zoomIn() {
+  let zoomCenterX = (xMin + xMax) / 2;
+  let zoomCenterY = (yMin + yMax) / 2;
 
-// Adjust canvas on window resize
-window.addEventListener("resize", () => {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  renderMandelbrot();
-});
+  let zoomWidth = (xMax - xMin) * zoomFactor;
+  let zoomHeight = (yMax - yMin) * zoomFactor;
+
+  xMin = zoomCenterX - zoomWidth / 2;
+  xMax = zoomCenterX + zoomWidth / 2;
+  yMin = zoomCenterY - zoomHeight / 2;
+  yMax = zoomCenterY + zoomHeight / 2;
+
+  drawMandelbrot();
+  setTimeout(zoomIn, zoomSpeed); // Keep zooming in
+}
+
+window.onload = () => {
+  drawMandelbrot();
+  zoomIn();
+};
